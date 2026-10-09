@@ -34,6 +34,14 @@ export async function getPortfolio(): Promise<{
   data: PortfolioData;
   source: "database" | "fallback";
 }> {
+  // No database configured (e.g. a Vercel project before the Neon database is
+  // connected): use the sample content instead of trying localhost, so the
+  // build still succeeds.
+  if (!process.env.DATABASE_URL && !process.env.DB_HOST) {
+    console.warn("[portfolio] No database configured (DATABASE_URL or DB_HOST); using sample data.");
+    return { data: fallbackData, source: "fallback" };
+  }
+
   try {
     return { data: await loadFromDatabase(), source: "database" };
   } catch (error) {
