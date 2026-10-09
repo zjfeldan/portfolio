@@ -78,6 +78,8 @@ CREATE TABLE IF NOT EXISTS projects (
   description   text,
   image_url     text,                    -- e.g. /images/projects/graphic-design/poster.webp
   image_alt     text,                    -- describes the image for screen readers
+  image_width   integer     CHECK (image_width > 0),   -- pixels; lets the gallery lay out
+  image_height  integer     CHECK (image_height > 0),  -- cards before images load
   project_url   text,                    -- optional link, shown as "See more"
   completed_on  date        NOT NULL DEFAULT CURRENT_DATE,  -- used for Newest / Oldest
   is_published  boolean     NOT NULL DEFAULT true,
@@ -243,6 +245,8 @@ SELECT json_build_object(
               'description', pr.description,
               'imageUrl', pr.image_url,
               'imageAlt', pr.image_alt,
+              'imageWidth', pr.image_width,
+              'imageHeight', pr.image_height,
               'projectUrl', pr.project_url,
               'completedOn', pr.completed_on,
               'tools', COALESCE((

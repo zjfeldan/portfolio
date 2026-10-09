@@ -16,14 +16,14 @@ WITH new_project AS (
   INSERT INTO projects
     (category_id, slug, title, description, image_url, image_alt, project_url, completed_on)
   VALUES (
-    (SELECT id FROM project_categories WHERE slug = 'graphic-design'),  -- <-- category slug
+    (SELECT id FROM project_categories WHERE slug = 'digital-art-graphic-design'),  -- <-- category slug
     'sample-poster',                                     -- <-- unique id: lowercase-with-dashes
     'Sample poster',                                     -- <-- title
     'What it was for, what you did and how it turned out.',  -- <-- description (or NULL)
-    '/images/projects/graphic-design/sample-poster.webp',    -- <-- image path (starts with /images)
+    '/images/projects/digital-art/sample-poster.webp',      -- <-- image path (starts with /images)
     'Poster for the 2026 university foundation week',    -- <-- what the image shows
     NULL,                                                -- <-- "See more" link in quotes, or NULL
-    '2026-10-09'                                         -- <-- date finished, YYYY-MM-DD
+    '2026-10-09'                                         -- <-- date you made it, YYYY-MM-DD (sets the order)
   )
   RETURNING id
 )

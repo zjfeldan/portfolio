@@ -9,18 +9,23 @@ import {
   PackageOpen,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AssetSlot } from "@/components/ui/AssetSlot";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { SkillIcon } from "@/components/ui/SkillIcon";
 import { monthYear } from "@/lib/format";
 import type { Project, ProjectCategory } from "@/lib/types";
+import { byNewest, byTitle, isImageOnly } from "./ordering";
 
-type SortOrder = "newest" | "oldest";
+/** Art galleries sort by title (A–Z / Z–A); the rest by date (newest / oldest) */
+type SortOrder = "az" | "za" | "newest" | "oldest";
+
+const SORT_LABEL: Record<SortOrder, string> = { az: "A–Z", za: "Z–A", newest: "Newest", oldest: "Oldest" };
+const SORT_FLIP: Record<SortOrder, SortOrder> = { az: "za", za: "az", newest: "oldest", oldest: "newest" };
 
 /**
  * A category's gallery in a native <dialog>:
  * - 3-column grid of A4 cards (2 on phones) that grows as you add entries
- * - Newest / Oldest sort, and an empty state
+ * - Sort button (A–Z / Z–A for art galleries, Newest / Oldest for the rest), and an empty state
  * - Clicking a card shows the whole image with its details, tools and link
  * Esc in the detail view goes back to the gallery; Esc again closes.
  */
@@ -74,26 +79,28 @@ function Gallery({
   dialogRef: React.RefObject<HTMLDialogElement | null>;
   close: () => void;
 }) {
-  const [sort, setSort] = useState<SortOrder>("newest");
+  const imageOnly = isImageOnly(category);
+  const [sort, setSort] = useState<SortOrder>(imageOnly ? "az" : "newest");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLButtonElement>(null);
   const lastOpenedId = useRef<number | null>(null);
   const savedScroll = useRef(0);
+  // Width ÷ height of each image, learnt from the gallery thumbnails, so the
+  // viewer can pick a portrait or landscape layout before the full image loads
+  const ratios = useRef(new Map<number, number>());
 
   const projects = useMemo(() => {
-    const direction = sort === "newest" ? -1 : 1;
-    return [...category.projects].sort(
-      (a, b) =>
-        direction * (a.completedOn.localeCompare(b.completedOn) || a.id - b.id),
-    );
+    const compare = sort === "az" || sort === "za" ? byTitle : byNewest;
+    const reverse = sort === "za" || sort === "oldest";
+    return [...category.projects].sort((a, b) => (reverse ? -1 : 1) * compare(a, b));
   }, [category.projects, sort]);
 
   const selectedIndex = projects.findIndex((project) => project.id === selectedId);
   const selected = selectedIndex >= 0 ? projects[selectedIndex] : null;
   const count = projects.length;
 
-  // Esc in the detail view: back to the gallery instead of closing
+  // Backup for Esc when focus isn't inside the gallery content
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -137,7 +144,14 @@ function Gallery({
     <div
       className="flex h-full flex-col"
       onKeyDown={(event) => {
-        if (!selected || count < 2) return;
+        if (!selected) return;
+        // Esc in the detail view: back to the gallery (stops the dialog closing)
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setSelectedId(null);
+          return;
+        }
+        if (count < 2) return;
         if (event.key === "ArrowRight") step(1);
         if (event.key === "ArrowLeft") step(-1);
       }}
@@ -158,19 +172,19 @@ function Gallery({
             {count > 1 ? (
               <button
                 type="button"
-                onClick={() => setSort((value) => (value === "newest" ? "oldest" : "newest"))}
-                aria-label={`Sorted ${sort} first. Switch to ${sort === "newest" ? "oldest" : "newest"} first`}
+                onClick={() => setSort((value) => SORT_FLIP[value])}
+                aria-label={`Sorted ${SORT_LABEL[sort]}. Switch to ${SORT_LABEL[SORT_FLIP[sort]]}`}
                 className="group flex h-10 items-center gap-2 px-2 font-hud text-xs font-bold uppercase tracking-wider text-ink transition-colors duration-200 ease-snap hover:text-accent-ink sm:text-sm"
               >
                 <ArrowDownUp
                   aria-hidden="true"
                   className={`size-[18px] text-accent drop-shadow-[0_0_6px_rgb(242_90_29/0.6)] transition-transform duration-300 ease-snap ${
-                    sort === "oldest" ? "rotate-180" : ""
+                    sort === "oldest" || sort === "za" ? "rotate-180" : ""
                   }`}
                   strokeWidth={2.4}
                 />
-                {sort === "newest" ? "Newest" : "Oldest"}
-                <span className="max-sm:hidden"> first</span>
+                {SORT_LABEL[sort]}
+                {imageOnly ? null : <span className="max-sm:hidden"> first</span>}
               </button>
             ) : null}
             <IconButton label="Close gallery" onClick={close}>
@@ -182,6 +196,20 @@ function Gallery({
         <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 sm:p-6">
           {count === 0 ? (
             <EmptyState />
+          ) : imageOnly ? (
+            // Pinterest-style: 4 columns of uneven cards (3 on tablets, 2 on phones)
+            <MasonryGrid
+              projects={projects}
+              renderCard={(project) => (
+                <GalleryCard
+                  showDate={false}
+                  project={project}
+                  aspect={cardAspect(project)}
+                  onOpen={() => openProject(project.id)}
+                  onRatio={(ratio) => ratios.current.set(project.id, ratio)}
+                />
+              )}
+            />
           ) : (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5">
               {projects.map((project, i) => (
@@ -190,7 +218,12 @@ function Gallery({
                   className="animate-rise"
                   style={{ animationDelay: `${Math.min(i, 11) * 45}ms` }}
                 >
-                  <GalleryCard project={project} onOpen={() => openProject(project.id)} />
+                  <GalleryCard
+                    showDate={!imageOnly}
+                    project={project}
+                    onOpen={() => openProject(project.id)}
+                    onRatio={(ratio) => ratios.current.set(project.id, ratio)}
+                  />
                 </li>
               ))}
             </ul>
@@ -239,34 +272,137 @@ function Gallery({
             </div>
           </header>
 
-          <ProjectDetail key={selected.id} project={selected} categoryName={category.name} />
+          {imageOnly ? (
+            <ImageOnlyView key={selected.id} project={selected} />
+          ) : (
+            <ProjectDetail
+              key={selected.id}
+              project={selected}
+              categoryName={category.name}
+              knownRatio={ratios.current.get(selected.id) ?? null}
+            />
+          )}
         </div>
       ) : null}
     </div>
   );
 }
 
-function GalleryCard({ project, onOpen }: { project: Project; onOpen: () => void }) {
-  const date = monthYear(project.completedOn);
+/** Masonry card shape: the image's own shape, kept between tall (1:2) and wide (16:10) */
+function cardAspect(project: Project): number {
+  const { imageWidth: width, imageHeight: height } = project;
+  const ratio = width && height ? width / height : 3 / 4;
+  return Math.min(Math.max(ratio, 0.5), 1.6);
+}
+
+const COLUMN_QUERIES = ["(min-width: 1024px)", "(min-width: 640px)"];
+
+function subscribeToColumns(onChange: () => void) {
+  const lists = COLUMN_QUERIES.map((query) => window.matchMedia(query));
+  lists.forEach((list) => list.addEventListener("change", onChange));
+  return () => lists.forEach((list) => list.removeEventListener("change", onChange));
+}
+
+function currentColumns() {
+  if (window.matchMedia(COLUMN_QUERIES[0]).matches) return 4;
+  if (window.matchMedia(COLUMN_QUERIES[1]).matches) return 3;
+  return 2;
+}
+
+/**
+ * Pinterest-style layout. Each card goes into the currently shortest
+ * column, so the feed reads left to right in the current sort order while the
+ * columns stay roughly even, whatever mix of portrait and landscape.
+ */
+function MasonryGrid({
+  projects,
+  renderCard,
+}: {
+  projects: Project[];
+  renderCard: (project: Project) => React.ReactNode;
+}) {
+  const columnCount = useSyncExternalStore(subscribeToColumns, currentColumns, () => 4);
+
+  const columns = useMemo(() => {
+    const result = Array.from({ length: columnCount }, () => ({
+      height: 0,
+      items: [] as { project: Project; index: number }[],
+    }));
+    projects.forEach((project, index) => {
+      const shortest = result.reduce((a, b) => (b.height < a.height ? b : a));
+      shortest.items.push({ project, index });
+      shortest.height += 1 / cardAspect(project);
+    });
+    return result;
+  }, [projects, columnCount]);
+
+  return (
+    <div className="flex items-start gap-3 sm:gap-4">
+      {columns.map((column, c) => (
+        <ul key={c} className="flex min-w-0 flex-1 flex-col gap-3 sm:gap-4">
+          {column.items.map(({ project, index }) => (
+            <li
+              key={project.id}
+              className="animate-rise"
+              style={{ animationDelay: `${Math.min(index, 15) * 35}ms` }}
+            >
+              {renderCard(project)}
+            </li>
+          ))}
+        </ul>
+      ))}
+    </div>
+  );
+}
+
+function GalleryCard({
+  project,
+  showDate,
+  aspect,
+  onOpen,
+  onRatio,
+}: {
+  project: Project;
+  /** false = title only on hover */
+  showDate: boolean;
+  /** Card width ÷ height for the masonry; leave out for the standard A4 card */
+  aspect?: number;
+  onOpen: () => void;
+  onRatio: (ratio: number) => void;
+}) {
+  const date = showDate ? monthYear(project.completedOn) : null;
   return (
     <button
       type="button"
       data-project-id={project.id}
       onClick={onOpen}
       aria-label={`${project.title}${date ? `, ${date}` : ""}. View details`}
-      className="group relative block aspect-[210/297] w-full overflow-hidden bg-shade shadow-[0_14px_28px_-20px_rgb(0_0_0/0.6)] transition-[translate,box-shadow] duration-300 ease-snap hover:-translate-y-1 hover:shadow-[0_0_0_2px_var(--color-accent),0_22px_40px_-18px_rgb(242_90_29/0.55)] focus-visible:-translate-y-1 focus-visible:shadow-[0_0_0_2px_var(--color-accent),0_22px_40px_-18px_rgb(242_90_29/0.55)] focus-visible:outline-none"
+      style={aspect ? { aspectRatio: aspect } : undefined}
+      className={`group relative block w-full overflow-hidden bg-shade ${aspect ? "" : "aspect-[210/297]"} shadow-[0_14px_28px_-20px_rgb(0_0_0/0.6)] transition-[translate,box-shadow] duration-300 ease-snap hover:-translate-y-1 hover:shadow-[0_0_0_2px_var(--color-accent),0_22px_40px_-18px_rgb(242_90_29/0.55)] focus-visible:-translate-y-1 focus-visible:shadow-[0_0_0_2px_var(--color-accent),0_22px_40px_-18px_rgb(242_90_29/0.55)] focus-visible:outline-none`}
     >
-      <AssetSlot
-        src={project.imageUrl}
-        alt=""
-        sizes="(min-width: 1100px) 340px, (min-width: 640px) 31vw, 46vw"
-        className="h-full w-full"
-        imageClassName="object-cover transition-[scale] duration-500 ease-snap group-hover:scale-[1.04]"
-      >
+      {/* Any image size fills the A4 card: scaled up and centred, edges trimmed */}
+      {project.imageUrl ? (
+        <Image
+          src={project.imageUrl}
+          alt=""
+          fill
+          quality={90}
+          sizes={
+            aspect
+              ? "(min-width: 1100px) 260px, (min-width: 1024px) 24vw, (min-width: 640px) 31vw, 46vw"
+              : "(min-width: 1100px) 340px, (min-width: 640px) 31vw, 46vw"
+          }
+          onLoad={(event) => {
+            const img = event.currentTarget;
+            if (img.naturalHeight) onRatio(img.naturalWidth / img.naturalHeight);
+          }}
+          className="object-cover object-center transition-[scale] duration-500 ease-snap group-hover:scale-[1.04]"
+        />
+      ) : (
         <div className="grid h-full w-full place-items-center bg-[repeating-linear-gradient(135deg,rgb(255_255_255/0.04)_0_1px,transparent_1px_10px)]">
           <ImageIcon aria-hidden="true" className="size-10 text-white/20" strokeWidth={1.5} />
         </div>
-      </AssetSlot>
+      )}
 
       {/* Title on hover (always shown on touch screens, which have no hover) */}
       <span className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-2 bg-linear-to-t from-ink/90 via-ink/55 to-transparent p-3 pt-12 text-left opacity-0 transition-[opacity,translate] duration-300 ease-snap group-hover:translate-y-0 group-hover:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100 [@media(hover:none)]:translate-y-0 [@media(hover:none)]:opacity-100 sm:p-4 sm:pt-14">
@@ -283,28 +419,86 @@ function GalleryCard({ project, onOpen }: { project: Project; onOpen: () => void
   );
 }
 
-function ProjectDetail({ project, categoryName }: { project: Project; categoryName: string }) {
-  const date = monthYear(project.completedOn);
+/** Art categories: just the full image, fitted inside, with its title underneath */
+function ImageOnlyView({ project }: { project: Project }) {
   return (
-    <div className="grid min-h-0 flex-1 overflow-y-auto md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:overflow-hidden">
-      {/* The whole image, never cropped */}
-      <div className="animate-wipe relative h-[62dvh] bg-sunken md:h-full">
-        <AssetSlot
-          src={project.imageUrl}
-          alt={project.imageAlt ?? project.title}
-          sizes="(min-width: 768px) 600px, 100vw"
-          className="h-full w-full"
-          imageClassName="object-contain p-3 sm:p-6"
-        >
-          <div className="flex h-full items-center justify-center p-3 sm:p-6">
-            <div className="grid aspect-[210/297] h-full place-items-center bg-shade">
-              <ImageIcon aria-hidden="true" className="size-14 text-white/20" strokeWidth={1.4} />
-            </div>
+    <div className="flex min-h-0 flex-1 flex-col bg-[#141414]">
+      <div className="animate-wipe relative min-h-0 flex-1">
+        {project.imageUrl ? (
+          <Image
+            src={project.imageUrl}
+            alt={project.imageAlt ?? project.title}
+            fill
+          quality={90}
+            sizes="(min-width: 1100px) 1100px, 100vw"
+            className="object-contain object-center p-2 sm:p-5"
+          />
+        ) : (
+          <div className="grid h-full place-items-center">
+            <ImageIcon aria-hidden="true" className="size-14 text-white/20" strokeWidth={1.4} />
           </div>
-        </AssetSlot>
+        )}
+      </div>
+      <h3 className="animate-rise shrink-0 border-t border-white/10 px-5 py-3 text-center font-display text-sm font-extrabold uppercase leading-snug tracking-tight text-white sm:py-4 sm:text-base">
+        {project.title}
+      </h3>
+    </div>
+  );
+}
+
+function ProjectDetail({
+  project,
+  categoryName,
+  knownRatio,
+}: {
+  project: Project;
+  categoryName: string;
+  /** Width ÷ height if the gallery already loaded this image */
+  knownRatio: number | null;
+}) {
+  const date = monthYear(project.completedOn);
+  const [ratio, setRatio] = useState<number | null>(knownRatio);
+  // Wider than about 6:5 counts as landscape
+  const landscape = ratio !== null && ratio > 1.2;
+
+  return (
+    <div
+      className={`grid min-h-0 flex-1 grid-cols-1 content-start overflow-y-auto ${
+        landscape ? "" : "md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:content-stretch md:overflow-hidden"
+      }`}
+    >
+      {/* Viewer: the whole image always fits inside, never cropped or zoomed.
+          Spare space around it shows as dark bars. Portrait images sit beside
+          the details; landscape images go full width above them. */}
+      <div
+        style={{ "--ratio": ratio ?? 210 / 297 } as React.CSSProperties}
+        className={`animate-wipe relative w-full shrink-0 bg-[#141414] ${
+          landscape
+            ? "aspect-[var(--ratio)] max-h-[min(58dvh,560px)]"
+            : "aspect-[var(--ratio)] max-h-[70dvh] md:aspect-auto md:h-full md:max-h-none"
+        }`}
+      >
+        {project.imageUrl ? (
+          <Image
+            src={project.imageUrl}
+            alt={project.imageAlt ?? project.title}
+            fill
+          quality={90}
+            sizes={landscape ? "(min-width: 1100px) 1100px, 100vw" : "(min-width: 768px) 600px, 100vw"}
+            onLoad={(event) => {
+              const img = event.currentTarget;
+              if (img.naturalHeight) setRatio(img.naturalWidth / img.naturalHeight);
+            }}
+            className="object-contain object-center p-2 sm:p-4"
+          />
+        ) : (
+          <div className="grid h-full place-items-center">
+            <ImageIcon aria-hidden="true" className="size-14 text-white/20" strokeWidth={1.4} />
+          </div>
+        )}
       </div>
 
-      <div className="animate-rise flex flex-col p-5 sm:p-7 md:overflow-y-auto">
+      <div className={`animate-rise flex flex-col p-5 sm:p-7 ${landscape ? "" : "md:overflow-y-auto"}`}>
         <span className="w-fit bg-accent px-2.5 py-1 font-hud text-xs font-bold uppercase tracking-wider text-ink">
           {categoryName}
         </span>

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { PanelLeftClose } from "lucide-react";
 import { getIcon } from "@/lib/icons";
 import { sections, site } from "@/lib/site";
@@ -29,18 +28,14 @@ export default function Sidebar() {
           mobileOpen ? "translate-x-0" : "-translate-x-[calc(100%+1.5rem)]"
         } ${collapsed ? "lg:-translate-x-[calc(100%+1.5rem)]" : "lg:translate-x-0"}`}
       >
-        {/* Avatar (a circle is the one rounded shape allowed) */}
+        {/* Logo: just the initials, black, lit orange on hover */}
         <a
           href="#about"
           onClick={closeMobile}
           aria-label={`${site.name}, back to top`}
-          className="relative mt-1 grid size-12 place-items-center overflow-hidden rounded-full bg-ink font-hud text-sm font-bold tracking-wider text-white ring-2 ring-ink ring-offset-2 ring-offset-surface transition-[box-shadow,background-color] duration-200 ease-snap hover:bg-accent hover:text-ink hover:ring-accent active:animate-bloom"
+          className="mt-1 grid size-12 place-items-center font-display text-2xl font-black tracking-tight text-ink transition-[color,filter,scale] duration-200 ease-snap hover:scale-105 hover:text-accent hover:drop-shadow-[0_0_8px_rgb(242_90_29/0.6)] active:scale-95"
         >
-          {site.avatarSrc ? (
-            <Image src={site.avatarSrc} alt="" fill sizes="48px" className="object-cover" />
-          ) : (
-            site.initials
-          )}
+          {site.initials}
         </a>
 
         <span aria-hidden="true" className="my-4 h-px w-8 bg-line" />

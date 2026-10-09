@@ -1,6 +1,15 @@
 import Image from "next/image";
 import type { IconType } from "react-icons";
-import { SiCss, SiHtml5, SiInkscape, SiNextdotjs, SiPostgresql, SiReact } from "react-icons/si";
+import {
+  SiCss,
+  SiFacebook,
+  SiGithub,
+  SiHtml5,
+  SiInkscape,
+  SiNextdotjs,
+  SiPostgresql,
+  SiReact,
+} from "react-icons/si";
 import { getIcon } from "@/lib/icons";
 
 /**
@@ -14,6 +23,8 @@ const BRANDS: Record<string, IconType> = {
   nextjs: SiNextdotjs,
   postgresql: SiPostgresql,
   inkscape: SiInkscape,
+  github: SiGithub,
+  facebook: SiFacebook,
 };
 
 /**

@@ -12,6 +12,7 @@ export function AssetSlot({
   className = "",
   imageClassName = "object-cover",
   eager = false,
+  quality,
   children,
 }: {
   src: string | null | undefined;
@@ -22,6 +23,8 @@ export function AssetSlot({
   imageClassName?: string;
   /** true only for the first thing visitors see (the portrait) */
   eager?: boolean;
+  /** 1-100; must be listed in images.qualities in next.config.ts (default 75) */
+  quality?: number;
   children?: React.ReactNode;
 }) {
   return (
@@ -32,6 +35,7 @@ export function AssetSlot({
           alt={alt}
           fill
           sizes={sizes}
+          quality={quality}
           loading={eager ? "eager" : "lazy"}
           fetchPriority={eager ? "high" : undefined}
           className={imageClassName}

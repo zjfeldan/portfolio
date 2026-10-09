@@ -4,7 +4,7 @@
  */
 export const site = {
   name: "Zach Jacob T. Feldan",
-  shortName: "Zach Jacob",
+  shortName: "Zach Jacob Feldan",
   initials: "ZJ",
   title: "Zach Jacob T. Feldan | Portfolio",
   description:

@@ -176,11 +176,6 @@ function EmptyCertificates() {
       </span>
       <p className="font-display text-sm font-extrabold uppercase text-ink">Certificates are on the way</p>
       <p className="max-w-[34ch] text-sm text-steel">New certificates will appear here as I complete them.</p>
-      {process.env.NODE_ENV !== "production" ? (
-        <p className="max-w-[40ch] font-hud text-xs font-semibold text-accent-ink">
-          Dev note: add rows to the certificates table to replace this card.
-        </p>
-      ) : null}
     </div>
   );
 }

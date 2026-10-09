@@ -37,6 +37,9 @@ export type Project = {
   description: string | null;
   imageUrl: string | null;
   imageAlt: string | null;
+  /** Pixel size of the image, used to shape gallery cards before they load */
+  imageWidth: number | null;
+  imageHeight: number | null;
   /** Optional link, shown as "See more" */
   projectUrl: string | null;
   /** "YYYY-MM-DD", used for Newest / Oldest sorting */

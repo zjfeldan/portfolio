@@ -27,7 +27,10 @@ export function WorkSection({
         <InView className="mt-5">
           <Tray>
             <Rail label="Skills" trackClassName="gap-3 sm:gap-5">
-              {skills.map((skill, index) => (
+              {/* Highest level first (Professional on the left); same level keeps your order */}
+              {[...skills]
+                .sort((a, b) => b.proficiency - a.proficiency)
+                .map((skill, index) => (
                 <SkillRing key={skill.id} skill={skill} index={index} />
               ))}
             </Rail>

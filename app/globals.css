@@ -241,7 +241,7 @@
    ------------------------------------------------------------------ */
 .project-stack {
   /* card width and the visible step between cards */
-  --w: clamp(112px, 30cqw, 260px);
+  --w: clamp(120px, 38cqw, 270px);
   --step: min(calc(var(--w) * 0.5), calc((100cqw - var(--w)) / max(var(--n) - 1, 1)));
 }
 
@@ -261,18 +261,19 @@
   margin-left: calc(var(--step) - var(--w));
 }
 
-/* Hover / keyboard focus: the card lifts, straightens and glows */
+/* Hover / keyboard focus: the card lifts, straightens fully (so the image
+   isn't resampled at an angle, which softens it) and glows */
 .stack-card:hover,
 .stack-card:has(:focus-visible) {
   z-index: 20;
-  transform: translateY(calc(var(--y) - 22px)) rotate(calc(var(--r) * 0.3)) scale(1.05);
+  transform: translateY(calc(var(--y) - 22px)) rotate(0deg) scale(1.05);
   box-shadow:
     0 0 0 2px var(--color-accent),
     0 30px 50px -18px rgb(242 90 29 / 0.55);
 }
 
 .stack-card:has(:active) {
-  transform: translateY(calc(var(--y) - 14px)) rotate(calc(var(--r) * 0.3)) scale(1.02);
+  transform: translateY(calc(var(--y) - 14px)) rotate(0deg) scale(1.02);
 }
 
 /* Hidden until the stack scrolls into view, then dealt out from the centre */
