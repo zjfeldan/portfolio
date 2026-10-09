@@ -1,29 +1,31 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import SiteHeader from "@/components/SiteHeader";
+import type { Metadata, Viewport } from "next";
+import { Figtree, Unbounded } from "next/font/google";
+import AppShell from "@/components/shell/AppShell";
+import { site } from "@/lib/site";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Display face: wide and heavy, for names and section titles
+const display = Unbounded({ variable: "--font-unbounded", subsets: ["latin"] });
+
+// Body face: clean and readable at small sizes
+const body = Figtree({ variable: "--font-figtree", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Zach Feldan | Portfolio",
-  description: "Multimedia, game art and IT work by Zach Feldan.",
+  title: site.title,
+  description: site.description,
+};
+
+export const viewport: Viewport = {
+  themeColor: "#10143a",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100`}
-      >
-        <SiteHeader />
-        {children}
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
+      <body className="min-h-dvh font-sans antialiased">
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

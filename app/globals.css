@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ------------------------------------------------------------------
+   Design tokens
+   Change a value here and every component that uses it updates.
+   ------------------------------------------------------------------ */
+@theme {
+  /* Palette (from the blue reference) */
+  --color-night: #10143a; /* page background */
+  --color-frame: #181e58; /* panels, header, sidebar */
+  --color-panel: #212878; /* cards inside panels */
+  --color-raised: #2b3392; /* hover / raised surfaces */
+  --color-line: #39429f; /* borders and rings */
+  --color-ink: #eef0ff; /* main text */
+  --color-mist: #a9b0e6; /* secondary text */
+  --color-cyan: #5be0ff; /* accent */
+  --color-lilac: #a88bff; /* secondary accent */
+  --color-blush: #ff8fb1; /* avatar */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Easing: "juice" overshoots slightly for a springy, tactile feel */
+  --ease-juice: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Page-load animations (used only in the About card) */
+  --animate-rise: rise 0.9s var(--ease-out-soft) both;
+  --animate-pop: pop 0.8s var(--ease-juice) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(48px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Fonts are loaded in app/layout.tsx and exposed as CSS variables */
+@theme inline {
+  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------ */
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+    /* keeps section tops clear of the fixed header when jumping to #links */
+    scroll-padding-top: 6rem;
+  }
+
+  /* On large screens, scrolling settles gently at the top of each panel */
+  @media (min-width: 1024px) {
+    html {
+      scroll-snap-type: y proximity;
+    }
+  }
+
+  body {
+    background:
+      radial-gradient(1100px 620px at 85% -10%, rgb(91 224 255 / 0.1), transparent 60%),
+      radial-gradient(900px 640px at -10% 35%, rgb(168 139 255 / 0.12), transparent 60%),
+      var(--color-night);
+    color: var(--color-ink);
+    /* safety net: nothing can make the page scroll sideways on phones */
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background: rgb(91 224 255 / 0.35);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 3px;
+  }
+
+  [data-snap] {
+    scroll-snap-align: start;
+  }
+
+  /* Respect the visitor's "reduce motion" setting everywhere */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------
+   Custom utilities
+   ------------------------------------------------------------------ */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Outlined text: the stroke uses the text color, the fill stays empty */
+@utility text-outline {
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.5px currentColor;
+}
+
+/* Sidebar slide. Transitions switch on only after the first paint
+   (AppShell sets data-shell-ready) so the page never animates on load. */
+@utility shell-slide {
+  html[data-shell-ready] & {
+    transition: transform 0.6s var(--ease-juice);
+  }
+}
+
+/* Header and content shift when the sidebar opens or closes */
+@utility shell-shift {
+  html[data-shell-ready] & {
+    transition: padding-left 0.5s var(--ease-out-soft);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Skill rings: fill when the skills row scrolls into view
+   ------------------------------------------------------------------ */
+.skill-ring-arc {
+  stroke-dasharray: var(--ring-c);
+  stroke-dashoffset: var(--ring-c);
+  transition: stroke-dashoffset 1.2s var(--ease-out-soft) var(--ring-delay, 0ms);
+}
+
+[data-inview="true"] .skill-ring-arc {
+  stroke-dashoffset: var(--ring-offset);
 }
