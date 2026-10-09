@@ -8,7 +8,7 @@
 
 BEGIN;
 
-TRUNCATE profile, project_skills, projects, skills, certificates,
+TRUNCATE profile, project_skills, projects, project_categories, skills, certificates,
          experiences, education, social_links
   RESTART IDENTITY CASCADE;
 
@@ -16,45 +16,58 @@ INSERT INTO profile (full_name, display_name, headline, bio, location, email)
 VALUES (
   'Zach Jacob T. Feldan',
   'Zach Jacob',
-  'Multimedia professional moving into IT',
-  'I lead multimedia for institution-wide events at the Communications Bureau of UST General Santos, and I''m a first-year MSIT student at Ateneo de Davao. I design, illustrate and animate, and I''m now building database-backed web apps with PostgreSQL and the PERN stack.',
+  'Multimedia | IT',
+  'I handle multimedia for the Communications Bureau of UST General Santos and I''m a first-year MSIT student at Ateneo de Davao. I design, illustrate and animate, and I''m learning to build web-based apps.',
   'General Santos City, Philippines',
   'you@example.com'
 );
 
--- proficiency: 1 Beginner, 2 Developing, 3 Intermediate, 4 Advanced, 5 Expert
+-- proficiency: 1 Beginner, 2 Developing, 3 Intermediate, 4 Advanced, 5 Professional
 INSERT INTO skills (slug, name, category, proficiency, icon_key, sort_order) VALUES
-  ('postgresql',    'PostgreSQL',    'database', 3, 'database', 10),
-  ('mysql',         'MySQL',         'database', 3, 'database', 20),
-  ('react',         'React',         'web',      2, 'code',     30),
-  ('nodejs',        'Node.js',       'web',      2, 'server',   40),
-  ('nextjs',        'Next.js',       'web',      1, 'layers',   50),
-  ('tailwind',      'Tailwind CSS',  'web',      1, 'code',     60),
-  ('aws',           'AWS',           'cloud',    1, 'cloud',    70),
-  ('photoshop',     'Photoshop',     'design',   4, 'image',    80),
-  ('illustrator',   'Illustrator',   'design',   4, 'pen',      90),
-  ('indesign',      'InDesign',      'design',   4, 'layers',  100),
-  ('after-effects', 'After Effects', 'motion',   2, 'film',    110);
+  ('html',          'HTML',              'web',      3, 'si:html5',        10),
+  ('css',           'CSS',               'web',      3, 'si:css',          20),
+  ('react',         'React',             'web',      1, 'si:react',        30),
+  ('nextjs',        'Next.js',           'web',      1, 'si:nextjs',       40),
+  ('photoshop',     'Photoshop',         'design',   5, 'text:Ps',         50),
+  ('clip-studio',   'Clip Studio',       'design',   5, 'text:CSP',        60),
+  ('procreate',     'Procreate',         'design',   5, 'text:Pc',         70),
+  ('illustrator',   'Illustrator',       'design',   5, 'text:Ai',         80),
+  ('inkscape',      'Inkscape',          'design',   5, 'si:inkscape',     90),
+  ('indesign',      'InDesign',          'design',   3, 'text:Id',        100),
+  ('after-effects', 'After Effects',     'motion',   1, 'text:Ae',        110),
+  ('postgresql',    'PostgreSQL',        'database', 3, 'si:postgresql',  120);
 
-INSERT INTO projects (slug, title, summary, category, is_featured, sort_order) VALUES
-  ('portfolio-website', 'This portfolio',
-   'Next.js, Tailwind CSS and PostgreSQL, built and documented from scratch.',
-   'it', true, 10),
-  ('davao-marketplace-pipeline', 'Davao Digital Marketplace data pipeline',
-   'S3 ingestion into Aurora PostgreSQL, then DynamoDB and Glue, built for MSIT Data Management.',
-   'it', true, 20),
-  ('undergrad-capstone', 'Undergraduate capstone',
-   'A PostgreSQL-backed system. Replace this with the problem it solved and your role.',
-   'it', false, 30),
-  ('paskuhan-opening-video', 'Paskuhan opening video',
-   'Animated opening for UST General Santos'' Paskuhan celebration.',
-   'creative', false, 40),
-  ('event-coverage', 'Institution-wide event coverage',
-   'Photo and video documentation for the Communications Bureau.',
-   'creative', false, 50),
-  ('game-art', 'Game art direction',
-   'Visual lead work for a US-based game studio.',
-   'creative', false, 60);
+-- Tools that appear on projects but not in the Skills row
+INSERT INTO skills (slug, name, category, proficiency, icon_key, sort_order, is_visible) VALUES
+  ('tailwind', 'Tailwind CSS', 'web',   1, 'code',  200, false),
+  ('aws',      'AWS',          'cloud', 1, 'cloud', 210, false);
+
+-- The five cards in the portfolio stack
+INSERT INTO project_categories (slug, name, icon_key, sort_order) VALUES
+  ('graphic-design',       'Graphic Design',       'palette', 10),
+  ('web-development',      'Web Development',      'code',    20),
+  ('digital-illustration', 'Digital Illustration', 'pen',     30),
+  ('motion-graphics',      'Motion Graphics',      'film',    40),
+  ('digital-assets',       'Digital Assets',       'layers',  50);
+
+-- Sample entries (Digital Assets is left empty to show the empty state)
+INSERT INTO projects (category_id, slug, title, description, completed_on)
+SELECT c.id, v.slug, v.title, v.description, v.completed_on::date
+FROM (VALUES
+  ('web-development', 'portfolio-website', 'This portfolio',
+   'Next.js, Tailwind CSS and PostgreSQL, built and documented from scratch.', '2026-10-01'),
+  ('web-development', 'davao-marketplace-pipeline', 'Davao Digital Marketplace data pipeline',
+   'S3 ingestion into Aurora PostgreSQL, then DynamoDB and Glue, built for MSIT Data Management.', '2026-09-20'),
+  ('web-development', 'undergrad-capstone', 'Undergraduate capstone',
+   'Replace this with the problem it solved and your role.', '2024-05-01'),
+  ('motion-graphics', 'paskuhan-opening-video', 'Paskuhan opening video',
+   'Animated opening for UST General Santos'' Paskuhan celebration.', '2026-09-30'),
+  ('graphic-design', 'event-pubmats', 'Event publication materials',
+   'Replace this with what the series was for and what you made.', '2025-11-15'),
+  ('digital-illustration', 'game-art', 'Game art direction',
+   'Visual lead work for a US-based game studio.', '2024-08-01')
+) AS v (category_slug, slug, title, description, completed_on)
+JOIN project_categories c ON c.slug = v.category_slug;
 
 -- Link projects to skills by slug
 INSERT INTO project_skills (project_id, skill_id)
@@ -68,7 +81,8 @@ FROM (VALUES
   ('undergrad-capstone',         'postgresql'),
   ('paskuhan-opening-video',     'after-effects'),
   ('paskuhan-opening-video',     'illustrator'),
-  ('event-coverage',             'photoshop'),
+  ('event-pubmats',              'photoshop'),
+  ('event-pubmats',              'illustrator'),
   ('game-art',                   'photoshop'),
   ('game-art',                   'illustrator')
 ) AS link (project_slug, skill_slug)

@@ -1,14 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Unbounded } from "next/font/google";
+import { Chakra_Petch, Montserrat } from "next/font/google";
 import AppShell from "@/components/shell/AppShell";
 import { site } from "@/lib/site";
 import "./globals.css";
 
-// Display face: wide and heavy, for names and section titles
-const display = Unbounded({ variable: "--font-unbounded", subsets: ["latin"] });
+// Names, titles and body text: heavy geometric sans
+const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"] });
 
-// Body face: clean and readable at small sizes
-const body = Figtree({ variable: "--font-figtree", subsets: ["latin"] });
+// HUD details (nav, buttons, tags, counters): squared, technical
+const chakra = Chakra_Petch({
+  variable: "--font-chakra",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: site.title,
@@ -16,14 +20,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#10143a",
+  themeColor: "#e9e9e6",
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={`${montserrat.variable} ${chakra.variable}`}>
       <body className="min-h-dvh font-sans antialiased">
         <AppShell>{children}</AppShell>
       </body>

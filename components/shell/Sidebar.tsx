@@ -16,7 +16,7 @@ export default function Sidebar() {
       <div
         aria-hidden="true"
         onClick={closeMobile}
-        className={`fixed inset-0 z-40 bg-night/60 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
+        className={`fixed inset-0 z-40 bg-ink/40 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden ${
           mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       />
@@ -25,16 +25,16 @@ export default function Sidebar() {
         id="site-sidebar"
         aria-label="Section shortcuts"
         inert={sidebarHidden}
-        className={`shell-slide fixed bottom-3 left-3 top-3 z-50 flex w-[76px] flex-col items-center rounded-[28px] bg-frame/95 py-4 shadow-[0_24px_60px_-20px_rgb(0_0_0/0.6)] ring-1 ring-line/70 backdrop-blur-md ${
+        className={`shell-slide fixed bottom-3 left-3 top-3 z-50 flex w-[76px] flex-col items-center border border-line bg-surface py-4 shadow-[0_24px_50px_-28px_rgb(0_0_0/0.45)] ${
           mobileOpen ? "translate-x-0" : "-translate-x-[calc(100%+1.5rem)]"
         } ${collapsed ? "lg:-translate-x-[calc(100%+1.5rem)]" : "lg:translate-x-0"}`}
       >
-        {/* Avatar */}
+        {/* Avatar (a circle is the one rounded shape allowed) */}
         <a
           href="#about"
           onClick={closeMobile}
           aria-label={`${site.name}, back to top`}
-          className="group relative grid size-12 place-items-center overflow-hidden rounded-2xl bg-linear-to-br from-blush to-lilac font-display text-sm font-bold text-night shadow-[0_8px_20px_-6px_rgb(255_143_177/0.6)] transition-transform duration-500 ease-juice hover:-rotate-6 hover:scale-110 active:scale-95"
+          className="relative mt-1 grid size-12 place-items-center overflow-hidden rounded-full bg-ink font-hud text-sm font-bold tracking-wider text-white ring-2 ring-ink ring-offset-2 ring-offset-surface transition-[box-shadow,background-color] duration-200 ease-snap hover:bg-accent hover:text-ink hover:ring-accent active:animate-bloom"
         >
           {site.avatarSrc ? (
             <Image src={site.avatarSrc} alt="" fill sizes="48px" className="object-cover" />
@@ -46,7 +46,7 @@ export default function Sidebar() {
         <span aria-hidden="true" className="my-4 h-px w-8 bg-line" />
 
         <nav aria-label="Sections" className="flex-1">
-          <ul className="flex flex-col items-center gap-2">
+          <ul className="flex flex-col items-center gap-1.5">
             {sections.map((section) => {
               const Icon = getIcon(section.icon);
               const active = activeId === section.id;
@@ -57,15 +57,15 @@ export default function Sidebar() {
                     onClick={closeMobile}
                     aria-label={section.label}
                     aria-current={active ? "true" : undefined}
-                    className="group relative grid size-12 place-items-center rounded-2xl text-mist transition-[background-color,color,transform,box-shadow] duration-500 ease-juice hover:-translate-y-0.5 hover:bg-raised hover:text-ink active:scale-90 aria-[current=true]:bg-cyan aria-[current=true]:text-night aria-[current=true]:shadow-[0_8px_22px_-8px_rgb(91_224_255/0.8)]"
+                    className="group relative grid size-12 place-items-center text-steel transition-colors duration-200 ease-snap hover:text-accent aria-[current=true]:text-accent"
                   >
                     <Icon
                       aria-hidden="true"
-                      className="size-5 transition-transform duration-500 ease-juice group-hover:-rotate-6 group-hover:scale-115"
-                      strokeWidth={2.2}
+                      className="size-[22px] transition-[scale,filter] duration-200 ease-snap group-hover:scale-110 group-active:scale-90 group-aria-[current=true]:scale-110 group-aria-[current=true]:drop-shadow-[0_0_6px_rgb(242_90_29/0.75)]"
+                      strokeWidth={2}
                     />
                     {/* Hover label (desktop) */}
-                    <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] top-1/2 -translate-x-1 -translate-y-1/2 whitespace-nowrap rounded-full bg-ink px-3 py-1 text-xs font-semibold text-night opacity-0 shadow-lg transition-[opacity,transform] duration-300 ease-out-soft group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 max-lg:hidden">
+                    <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] top-1/2 -translate-x-1 -translate-y-1/2 whitespace-nowrap bg-ink px-3 py-1 font-hud text-xs font-bold uppercase tracking-wider text-white opacity-0 transition-[opacity,transform] duration-200 ease-snap group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 max-lg:hidden">
                       {section.label}
                     </span>
                   </a>
@@ -80,9 +80,9 @@ export default function Sidebar() {
           onClick={toggleSidebar}
           aria-label="Hide sidebar"
           aria-controls="site-sidebar"
-          className="grid size-11 place-items-center rounded-2xl text-mist transition-[background-color,color,transform] duration-500 ease-juice hover:bg-raised hover:text-ink active:scale-90"
+          className="grid size-11 place-items-center text-steel transition-[color,filter,scale] duration-200 ease-snap hover:text-accent hover:drop-shadow-[0_0_6px_rgb(242_90_29/0.75)] active:scale-90"
         >
-          <PanelLeftClose aria-hidden="true" className="size-5" strokeWidth={2.2} />
+          <PanelLeftClose aria-hidden="true" className="size-5" strokeWidth={2} />
         </button>
       </aside>
     </>

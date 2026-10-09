@@ -1,7 +1,8 @@
 /**
  * One scroll "landing area". Every top-level section of the page is a Panel,
- * so spacing, corners and scroll behaviour stay consistent.
+ * so spacing, edges and scroll behaviour stay consistent.
  */
+import { PortraitSlideshow } from "@/components/ui/PortraitSlideshow";
 export function Panel({
   id,
   labelledBy,
@@ -18,13 +19,14 @@ export function Panel({
       id={id}
       aria-labelledby={labelledBy}
       data-snap
-      className={`relative rounded-[32px] bg-frame/70 p-4 ring-1 ring-line/60 sm:p-6 lg:p-8 ${className}`}
+      className={`relative border border-line bg-surface p-4 shadow-[0_30px_60px_-36px_rgb(0_0_0/0.35)] sm:p-6 lg:p-8 ${className}`}
     >
       {children}
     </section>
   );
 }
 
+/** Section heading */
 export function SectionTitle({
   id,
   className = "",
@@ -35,19 +37,27 @@ export function SectionTitle({
   children: React.ReactNode;
 }) {
   return (
-    <h2
-      id={id}
-      className={`font-display text-base font-bold uppercase tracking-[0.14em] text-ink sm:text-lg ${className}`}
-    >
-      {children}
-    </h2>
+    <div className={`flex flex-col ${className}`}>
+      <h2
+        id={id}
+        className="font-display text-lg font-extrabold uppercase leading-none tracking-tight text-ink sm:text-xl"
+      >
+        {children}
+      </h2>
+    </div>
   );
 }
 
-/** Rounded inner frame used for Skills, Certificates, Experience, Education */
-export function Tray({ className = "", children }: { className?: string; children: React.ReactNode }) {
+/** Framed inner area used for Skills, Certificates, Experience, Education */
+export function Tray({
+  className = "",
+  children,
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className={`rounded-[26px] bg-night/45 p-3 ring-2 ring-line/80 sm:p-4 ${className}`}>
+    <div className={`border border-line bg-sunken p-3 sm:p-4 ${className}`}>
       {children}
     </div>
   );

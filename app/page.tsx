@@ -11,7 +11,7 @@ export default async function Home() {
   return (
     <>
       <AboutSection profile={data.profile} />
-      <WorkSection projects={data.projects} skills={data.skills} />
+      <WorkSection categories={data.categories} skills={data.skills} />
       <CredentialsSection
         certificates={data.certificates}
         experiences={data.experiences}

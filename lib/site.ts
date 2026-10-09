@@ -8,11 +8,26 @@ export const site = {
   initials: "ZJ",
   title: "Zach Jacob T. Feldan | Portfolio",
   description:
-    "Multimedia professional moving into IT, focused on databases and web development.",
+    "Multimedia and IT portfolio: design, illustration, animation and web-based apps.",
   /** Square avatar for the sidebar, e.g. "/images/profile/avatar.webp". null = initials */
   avatarSrc: null as string | null,
   /** Background art for the contact panel, e.g. "/images/contact/scene.webp" */
   contactSceneSrc: null as string | null,
+  /** About card slideshow. Files go in public/images/about/. Empty list = single portrait. */
+  aboutSlides: [
+    {
+      src: "/images/about/slide-1.webp",
+      alt: "chacaracter-1",
+    },
+    {
+      src: "/images/about/slide-2.webp",
+      alt: "character-2",
+    },
+    {
+      src: "/images/about/slide-3.webp",
+      alt: "character-3",
+    },
+  ] as { src: string; alt: string }[],
   copyrightYear: 2026,
 };
 

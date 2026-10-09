@@ -1,34 +1,40 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
-   Design tokens
+   Design tokens: flat cyber / game-UI theme
    Change a value here and every component that uses it updates.
    ------------------------------------------------------------------ */
 @theme {
-  /* Palette (from the blue reference) */
-  --color-night: #10143a; /* page background */
-  --color-frame: #181e58; /* panels, header, sidebar */
-  --color-panel: #212878; /* cards inside panels */
-  --color-raised: #2b3392; /* hover / raised surfaces */
-  --color-line: #39429f; /* borders and rings */
-  --color-ink: #eef0ff; /* main text */
-  --color-mist: #a9b0e6; /* secondary text */
-  --color-cyan: #5be0ff; /* accent */
-  --color-lilac: #a88bff; /* secondary accent */
-  --color-blush: #ff8fb1; /* avatar */
+  /* Palette */
+  --color-base: #e9e9e6; /* page background */
+  --color-surface: #ffffff; /* panels, header, sidebar */
+  --color-sunken: #f3f3f1; /* inner trays */
+  --color-line: #d4d4d0; /* borders */
+  --color-ink: #0e0e0e; /* main text, dark buttons */
+  --color-graphite: #262626; /* dark surfaces */
+  --color-shade: #1a1a1a; /* image placeholders */
+  --color-steel: #6b6b6b; /* secondary text */
+  --color-accent: #f25a1d; /* orange: fills, glows, bars, icons */
+  --color-accent-ink: #d0460e; /* deeper orange: small text on white, pressed state */
 
-  /* Easing: "juice" overshoots slightly for a springy, tactile feel */
-  --ease-juice: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  /* No rounded corners by default: everything is sharp */
+  --radius-none: 0;
 
-  /* Page-load animations (used only in the About card) */
-  --animate-rise: rise 0.9s var(--ease-out-soft) both;
-  --animate-pop: pop 0.8s var(--ease-juice) both;
+  /* Easing: quick and decisive, no bounce */
+  --ease-snap: cubic-bezier(0.2, 0.9, 0.1, 1);
+  --ease-wipe: cubic-bezier(0.7, 0, 0.2, 1);
+
+  /* Page-load animations (About card only) */
+  --animate-rise: rise 0.6s var(--ease-snap) both;
+  --animate-wipe: wipe 0.8s var(--ease-wipe) both;
+  --animate-slide-in: slide-in 0.8s var(--ease-snap) both;
+  /* Orange glow pulse for pressed buttons and active items */
+  --animate-bloom: bloom 0.6s ease-out;
 
   @keyframes rise {
     from {
       opacity: 0;
-      transform: translateY(24px);
+      transform: translateY(14px);
     }
     to {
       opacity: 1;
@@ -36,22 +42,42 @@
     }
   }
 
-  @keyframes pop {
+  /* Reveals text left to right, like a HUD readout */
+  @keyframes wipe {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @keyframes slide-in {
     from {
       opacity: 0;
-      transform: translateY(48px) scale(0.94);
+      transform: translateX(40px);
     }
     to {
       opacity: 1;
       transform: none;
+    }
+  }
+
+  @keyframes bloom {
+    from {
+      box-shadow: 0 0 0 0 rgb(242 90 29 / 0.55);
+    }
+    to {
+      box-shadow: 0 0 0 14px rgb(242 90 29 / 0);
     }
   }
 }
 
 /* Fonts are loaded in app/layout.tsx and exposed as CSS variables */
 @theme inline {
-  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-hud: var(--font-chakra), ui-monospace, sans-serif;
 }
 
 /* ------------------------------------------------------------------
@@ -59,10 +85,15 @@
    ------------------------------------------------------------------ */
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light;
     scroll-behavior: smooth;
     /* keeps section tops clear of the fixed header when jumping to #links */
     scroll-padding-top: 6rem;
+  }
+
+  /* Page stays still behind an open project modal */
+  html:has(dialog[open]) {
+    overflow: hidden;
   }
 
   /* On large screens, scrolling settles gently at the top of each panel */
@@ -73,26 +104,35 @@
   }
 
   body {
-    background:
-      radial-gradient(1100px 620px at 85% -10%, rgb(91 224 255 / 0.1), transparent 60%),
-      radial-gradient(900px 640px at -10% 35%, rgb(168 139 255 / 0.12), transparent 60%),
-      var(--color-night);
+    background-color: var(--color-base);
+    /* faint technical grid */
+    background-image:
+      linear-gradient(rgb(14 14 14 / 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(14 14 14 / 0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
     color: var(--color-ink);
     /* safety net: nothing can make the page scroll sideways on phones */
     overflow-x: clip;
   }
 
   ::selection {
-    background: rgb(91 224 255 / 0.35);
+    background: var(--color-accent);
+    color: white;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-cyan);
+    outline: 2px solid var(--color-accent);
     outline-offset: 3px;
   }
 
   [data-snap] {
     scroll-snap-align: start;
+  }
+
+  /* Lucide icons: square ends and sharp joins for a flat, angular look */
+  svg.lucide {
+    stroke-linecap: square;
+    stroke-linejoin: miter;
   }
 
   /* Respect the visitor's "reduce motion" setting everywhere */
@@ -127,18 +167,57 @@
   -webkit-text-stroke: 1.5px currentColor;
 }
 
+/* HUD corner brackets. Add to a `relative` element; they snap in when a
+   parent with the `group` class is hovered or focused. */
+@utility hud-corners {
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    pointer-events: none;
+    opacity: 0;
+    transition:
+      opacity 0.2s var(--ease-snap),
+      transform 0.25s var(--ease-snap);
+    z-index: 2;
+  }
+  &::before {
+    top: 8px;
+    left: 8px;
+    border-top: 2px solid var(--color-accent);
+    border-left: 2px solid var(--color-accent);
+    transform: translate(6px, 6px);
+  }
+  &::after {
+    right: 8px;
+    bottom: 8px;
+    border-right: 2px solid var(--color-accent);
+    border-bottom: 2px solid var(--color-accent);
+    transform: translate(-6px, -6px);
+  }
+  :where(.group):hover &::before,
+  :where(.group):hover &::after,
+  :where(.group):focus-visible &::before,
+  :where(.group):focus-visible &::after {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Sidebar slide. Transitions switch on only after the first paint
    (AppShell sets data-shell-ready) so the page never animates on load. */
 @utility shell-slide {
   html[data-shell-ready] & {
-    transition: transform 0.6s var(--ease-juice);
+    transition: transform 0.35s var(--ease-snap);
   }
 }
 
 /* Header and content shift when the sidebar opens or closes */
 @utility shell-shift {
   html[data-shell-ready] & {
-    transition: padding-left 0.5s var(--ease-out-soft);
+    transition: padding-left 0.35s var(--ease-snap);
   }
 }
 
@@ -148,9 +227,96 @@
 .skill-ring-arc {
   stroke-dasharray: var(--ring-c);
   stroke-dashoffset: var(--ring-c);
-  transition: stroke-dashoffset 1.2s var(--ease-out-soft) var(--ring-delay, 0ms);
+  transition: stroke-dashoffset 1s var(--ease-snap) var(--ring-delay, 0ms);
 }
 
 [data-inview="true"] .skill-ring-arc {
   stroke-dashoffset: var(--ring-offset);
+}
+
+/* ------------------------------------------------------------------
+   Project stack: overlapping cards that fan out when scrolled into view.
+   The overlap adapts to the number of projects (--n) and the width
+   of the stack, so it fits on any screen without sideways scrolling.
+   ------------------------------------------------------------------ */
+.project-stack {
+  /* card width and the visible step between cards */
+  --w: clamp(112px, 30cqw, 260px);
+  --step: min(calc(var(--w) * 0.5), calc((100cqw - var(--w)) / max(var(--n) - 1, 1)));
+}
+
+.stack-card {
+  position: relative;
+  flex: none;
+  width: var(--w);
+  aspect-ratio: 5 / 6;
+  transform: translateY(var(--y)) rotate(var(--r));
+  box-shadow: 0 22px 34px -20px rgb(0 0 0 / 0.55);
+  transition:
+    transform 0.35s var(--ease-snap),
+    box-shadow 0.35s var(--ease-snap);
+}
+
+.stack-card + .stack-card {
+  margin-left: calc(var(--step) - var(--w));
+}
+
+/* Hover / keyboard focus: the card lifts, straightens and glows */
+.stack-card:hover,
+.stack-card:has(:focus-visible) {
+  z-index: 20;
+  transform: translateY(calc(var(--y) - 22px)) rotate(calc(var(--r) * 0.3)) scale(1.05);
+  box-shadow:
+    0 0 0 2px var(--color-accent),
+    0 30px 50px -18px rgb(242 90 29 / 0.55);
+}
+
+.stack-card:has(:active) {
+  transform: translateY(calc(var(--y) - 14px)) rotate(calc(var(--r) * 0.3)) scale(1.02);
+}
+
+/* Hidden until the stack scrolls into view, then dealt out from the centre */
+.deal-in:not([data-inview="true"]) .stack-card {
+  opacity: 0;
+}
+
+.deal-in[data-inview="true"] .stack-card {
+  animation: deal 0.75s var(--ease-snap) both;
+  animation-delay: calc(var(--i) * 60ms);
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    translate: calc(var(--c) * var(--step) * -1) 48px;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Project modal (a native <dialog>: Esc closes it, focus stays inside)
+   ------------------------------------------------------------------ */
+.project-modal[open] {
+  animation: modal-in 0.4s var(--ease-snap);
+}
+
+.project-modal::backdrop {
+  background: rgb(14 14 14 / 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.project-modal[open]::backdrop {
+  animation: backdrop-in 0.3s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
 }

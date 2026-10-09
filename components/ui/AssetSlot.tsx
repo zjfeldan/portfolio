@@ -42,22 +42,3 @@ export function AssetSlot({
     </div>
   );
 }
-
-/** Small label inside a placeholder telling you which file goes there */
-export function AssetHint({
-  position = "bottom",
-  children,
-}: {
-  position?: "top" | "bottom";
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className={`pointer-events-none absolute left-1/2 max-w-[90%] -translate-x-1/2 truncate rounded-full bg-night/75 px-3 py-1 text-[11px] font-medium text-mist ring-1 ring-line/60 ${
-        position === "top" ? "top-3" : "bottom-3"
-      }`}
-    >
-      {children}
-    </span>
-  );
-}

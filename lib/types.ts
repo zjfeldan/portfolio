@@ -3,8 +3,6 @@
  * db/schema.sql. Keep the two in sync when you add a column.
  */
 
-export type ProjectCategory = "it" | "creative";
-
 export type SkillCategory =
   | "database"
   | "web"
@@ -24,18 +22,37 @@ export type Profile = {
   resumeUrl: string | null;
 };
 
+/** A tool used on a project: a row from the skills table */
+export type Tool = {
+  name: string;
+  iconKey: string;
+  iconUrl: string | null;
+};
+
+/** One entry in a category's gallery */
 export type Project = {
   id: number;
   slug: string;
   title: string;
-  summary: string;
-  category: ProjectCategory;
-  coverUrl: string | null;
-  coverAlt: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  imageAlt: string | null;
+  /** Optional link, shown as "See more" */
   projectUrl: string | null;
-  repoUrl: string | null;
-  isFeatured: boolean;
-  skills: string[];
+  /** "YYYY-MM-DD", used for Newest / Oldest sorting */
+  completedOn: string;
+  tools: Tool[];
+};
+
+/** One card in the portfolio stack, holding its gallery of projects */
+export type ProjectCategory = {
+  id: number;
+  slug: string;
+  name: string;
+  iconKey: string;
+  coverUrl: string | null;
+  /** Newest first */
+  projects: Project[];
 };
 
 export type Skill = {
@@ -92,7 +109,7 @@ export type SocialLink = {
 
 export type PortfolioData = {
   profile: Profile;
-  projects: Project[];
+  categories: ProjectCategory[];
   skills: Skill[];
   certificates: Certificate[];
   experiences: Experience[];

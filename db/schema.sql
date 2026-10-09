@@ -53,26 +53,39 @@ CREATE TABLE IF NOT EXISTS skills (
 );
 
 -- ---------------------------------------------------------------------
--- Projects (IT and creative)
+-- Project categories: one card each in the portfolio stack
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS project_categories (
+  id          integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  slug        text        NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  name        text        NOT NULL,                  -- label shown on hover
+  icon_key    text        NOT NULL DEFAULT 'grid',   -- placeholder icon (lib/icons.ts)
+  cover_url   text,                                  -- image on the stack card
+  sort_order  integer     NOT NULL DEFAULT 0,
+  is_visible  boolean     NOT NULL DEFAULT true,
+  created_at  timestamptz NOT NULL DEFAULT now(),
+  updated_at  timestamptz NOT NULL DEFAULT now()
+);
+
+-- ---------------------------------------------------------------------
+-- Projects: the entries inside each category's gallery
 -- ---------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS projects (
   id            integer     GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  category_id   integer     NOT NULL REFERENCES project_categories (id) ON DELETE RESTRICT,
   slug          text        NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   title         text        NOT NULL,
-  summary       text        NOT NULL,
-  category      text        NOT NULL CHECK (category IN ('it', 'creative')),
-  cover_url     text,
-  cover_alt     text,
-  project_url   text,
-  repo_url      text,
-  is_featured   boolean     NOT NULL DEFAULT false,
+  description   text,
+  image_url     text,                    -- e.g. /images/projects/graphic-design/poster.webp
+  image_alt     text,                    -- describes the image for screen readers
+  project_url   text,                    -- optional link, shown as "See more"
+  completed_on  date        NOT NULL DEFAULT CURRENT_DATE,  -- used for Newest / Oldest
   is_published  boolean     NOT NULL DEFAULT true,
-  sort_order    integer     NOT NULL DEFAULT 0,
   created_at    timestamptz NOT NULL DEFAULT now(),
   updated_at    timestamptz NOT NULL DEFAULT now()
 );
 
--- Which skills each project used (many-to-many)
+-- Tools used on each project, taken from the skills table (many-to-many)
 CREATE TABLE IF NOT EXISTS project_skills (
   project_id  integer NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
   skill_id    integer NOT NULL REFERENCES skills (id) ON DELETE CASCADE,
@@ -152,8 +165,10 @@ CREATE TABLE IF NOT EXISTS social_links (
 -- With a handful of rows PostgreSQL may still scan the table (that is
 -- faster at small sizes); these pay off as the tables grow.
 -- ---------------------------------------------------------------------
-CREATE INDEX IF NOT EXISTS projects_published_order_idx
-  ON projects (is_featured DESC, sort_order, id) WHERE is_published;
+CREATE INDEX IF NOT EXISTS project_categories_visible_order_idx
+  ON project_categories (sort_order, id) WHERE is_visible;
+CREATE INDEX IF NOT EXISTS projects_category_date_idx
+  ON projects (category_id, completed_on DESC, id DESC) WHERE is_published;
 CREATE INDEX IF NOT EXISTS project_skills_skill_idx
   ON project_skills (skill_id);
 CREATE INDEX IF NOT EXISTS skills_visible_order_idx
@@ -174,6 +189,8 @@ CREATE OR REPLACE TRIGGER profile_set_updated_at
   BEFORE UPDATE ON profile FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER skills_set_updated_at
   BEFORE UPDATE ON skills FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+CREATE OR REPLACE TRIGGER project_categories_set_updated_at
+  BEFORE UPDATE ON project_categories FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER projects_set_updated_at
   BEFORE UPDATE ON projects FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 CREATE OR REPLACE TRIGGER certificates_set_updated_at
@@ -208,30 +225,46 @@ SELECT json_build_object(
     WHERE p.id = 1
   ),
 
-  'projects', COALESCE((
+  -- Each category with its projects (newest first) and each project's tools
+  'categories', COALESCE((
     SELECT json_agg(
       json_build_object(
-        'id', pr.id,
-        'slug', pr.slug,
-        'title', pr.title,
-        'summary', pr.summary,
-        'category', pr.category,
-        'coverUrl', pr.cover_url,
-        'coverAlt', pr.cover_alt,
-        'projectUrl', pr.project_url,
-        'repoUrl', pr.repo_url,
-        'isFeatured', pr.is_featured,
-        'skills', COALESCE((
-          SELECT json_agg(s.name ORDER BY s.sort_order, s.name)
-          FROM project_skills ps
-          JOIN skills s ON s.id = ps.skill_id
-          WHERE ps.project_id = pr.id
+        'id', c.id,
+        'slug', c.slug,
+        'name', c.name,
+        'iconKey', c.icon_key,
+        'coverUrl', c.cover_url,
+        'projects', COALESCE((
+          SELECT json_agg(
+            json_build_object(
+              'id', pr.id,
+              'slug', pr.slug,
+              'title', pr.title,
+              'description', pr.description,
+              'imageUrl', pr.image_url,
+              'imageAlt', pr.image_alt,
+              'projectUrl', pr.project_url,
+              'completedOn', pr.completed_on,
+              'tools', COALESCE((
+                SELECT json_agg(
+                  json_build_object('name', s.name, 'iconKey', s.icon_key, 'iconUrl', s.icon_url)
+                  ORDER BY s.sort_order, s.name
+                )
+                FROM project_skills ps
+                JOIN skills s ON s.id = ps.skill_id
+                WHERE ps.project_id = pr.id
+              ), '[]'::json)
+            )
+            ORDER BY pr.completed_on DESC, pr.id DESC
+          )
+          FROM projects pr
+          WHERE pr.category_id = c.id AND pr.is_published
         ), '[]'::json)
       )
-      ORDER BY pr.is_featured DESC, pr.sort_order, pr.id
+      ORDER BY c.sort_order, c.id
     )
-    FROM projects pr
-    WHERE pr.is_published
+    FROM project_categories c
+    WHERE c.is_visible
   ), '[]'::json),
 
   'skills', COALESCE((
